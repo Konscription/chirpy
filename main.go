@@ -1,23 +1,30 @@
 package main
 
 import (
+	"log"
 	"net/http"
 )
 
 func main() {
-	port := "8080"
-	mux := http.NewServeMux()
+	const filepathroot = "."
+	const port = "8080"
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
-	fileServer := http.FileServer(http.Dir("."))
+	mux := http.NewServeMux()
+	fileServer := http.FileServer(http.Dir(filepathroot))
 	mux.Handle("/app/", http.StripPrefix("/app", fileServer))
+	mux.HandleFunc("/healthz", handlerRediness)
+
 	server := &http.Server{
-		Handler: mux,
 		Addr:    ":" + port,
+		Handler: mux,
 	}
-	server.ListenAndServe()
+
+	log.Printf("serving files from %s on port: %s\n", filepathroot, port)
+	log.Fatal(server.ListenAndServe())
+}
+
+func handlerRediness(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
