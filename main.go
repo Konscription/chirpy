@@ -29,9 +29,9 @@ func main() {
 
 	// Then use the instance of call the middleware method
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", fileServer)))
-	mux.HandleFunc("/healthz", handlerRediness)
-	mux.HandleFunc("/metrics", apiCfg.metricsHandler)
-	mux.HandleFunc("/reset", apiCfg.resetHandler)
+	mux.HandleFunc("GET /healthz", handlerRediness)
+	mux.HandleFunc("GET /metrics", apiCfg.metricsHandler)
+	mux.HandleFunc("POST /reset", apiCfg.resetHandler)
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
