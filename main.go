@@ -30,8 +30,8 @@ func main() {
 	// Then use the instance of call the middleware method
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", fileServer)))
 	mux.HandleFunc("GET /api/healthz", handlerRediness)
-	mux.HandleFunc("GET /api/metrics", apiCfg.metricsHandler)
-	mux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
+	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
@@ -48,12 +48,17 @@ func handlerRediness(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 
 	// get the count and format it correctcly
 	hitCount := cfg.fileserverHits.Load()
-	w.Write([]byte(fmt.Sprintf("Hits: %d", hitCount)))
+	w.Write([]byte(fmt.Sprintf(`<html>
+  <body>
+	<h1>Welcome, Chirpy Admin</h1>
+	<p>Chirpy has been visited %d times!</p>
+  </body>
+</html>`, hitCount)))
 }
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
