@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
+	"strings"
 	"sync/atomic"
 )
 
@@ -76,13 +78,11 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 	type parameters struct {
 		Body string `json:"body"`
 	}
-
 	type ErrorResponse struct {
 		Error string `json:"error"`
 	}
-
 	type ValidResponse struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
 
 	// Check if the request method is POST
@@ -113,8 +113,10 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 		writeJSONResponse(w, 400, errorM)
 		return
 	}
+
+	// check if the chirp contains any profane words
 	validM := ValidResponse{
-		Valid: true,
+		CleanedBody: chirpProfaneChecker(params.Body),
 	}
 	log.Printf("Chirp is valid")
 	writeJSONResponse(w, 200, validM)
@@ -130,4 +132,21 @@ func writeJSONResponse(w http.ResponseWriter, status int, data interface{}) {
 	}
 	w.WriteHeader(status)
 	w.Write(response)
+}
+
+func chirpProfaneChecker(chirp string) string {
+	profaneWords := []string{"kerfuffle", "sharbert", "fornax"}
+
+	// check if the chirp contains any profane words
+	splitChirp := strings.Split(chirp, " ")
+	cleanChirp := []string{}
+	// replace the profane word with asterisks
+	for _, word := range splitChirp {
+		if slices.Contains(profaneWords, strings.ToLower(word)) {
+			cleanChirp = append(cleanChirp, "****")
+			continue
+		}
+		cleanChirp = append(cleanChirp, word)
+	}
+	return strings.Join(cleanChirp, " ")
 }
