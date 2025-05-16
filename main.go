@@ -15,6 +15,7 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	platform       string
 }
 
 func main() {
@@ -23,9 +24,16 @@ func main() {
 
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
+
 	if dbURL == "" {
 		log.Fatal("DB_URL environment variable is not set")
 	}
+	if platform == "" {
+		log.Printf("PLATFORM environment variable is not set. defaulting to dev")
+		platform = "dev"
+	}
+
 	// Open a connection to the database
 	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -35,8 +43,11 @@ func main() {
 	dbQueries := database.New(dbConn)
 
 	// First, create an instance of apiConfig
-	apiCfg := &apiConfig{}
-	apiCfg.db = dbQueries
+	apiCfg := &apiConfig{
+		fileserverHits: atomic.Int32{},
+		db:             dbQueries,
+		platform:       platform,
+	}
 
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir(filepathroot))
@@ -46,6 +57,7 @@ func main() {
 
 	mux.HandleFunc("GET /api/healthz", handlerRediness)
 	mux.HandleFunc("POST /api/validate_chirp", apiCfg.validateChirpHandler)
+	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)

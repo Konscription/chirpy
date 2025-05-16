@@ -8,17 +8,17 @@ import (
 	"strings"
 )
 
-func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Body string `json:"body"`
-	}
-	type ErrorResponse struct {
-		Error string `json:"error"`
-	}
-	type ValidResponse struct {
-		CleanedBody string `json:"cleaned_body"`
-	}
+type parameters struct {
+	Body string `json:"body"`
+}
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+type ValidResponse struct {
+	CleanedBody string `json:"cleaned_body"`
+}
 
+func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the request method is POST
 	if r.Method != http.MethodPost {
 		errorM := ErrorResponse{
