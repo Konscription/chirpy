@@ -24,7 +24,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		errorM := ErrorResponse{
 			Error: "Method not allowed",
 		}
-		writeJSONResponse(w, 405, errorM)
+		respondWithJSON(w, 405, errorM)
 		return
 	}
 	decoder := json.NewDecoder(r.Body)
@@ -34,7 +34,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		errorM := ErrorResponse{
 			Error: "Something went wrong",
 		}
-		writeJSONResponse(w, http.StatusInternalServerError, errorM)
+		respondWithJSON(w, http.StatusInternalServerError, errorM)
 		return
 	}
 	//Create the user in your database
@@ -43,7 +43,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		errorM := ErrorResponse{
 			Error: "Something went wrong",
 		}
-		writeJSONResponse(w, http.StatusInternalServerError, errorM)
+		respondWithJSON(w, http.StatusInternalServerError, errorM)
 		return
 	}
 	//Map the returned database user to your own User struct
@@ -54,5 +54,5 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		Email:     user.Email,
 	}
 	//Write the response back as JSON
-	writeJSONResponse(w, http.StatusCreated, userResponse)
+	respondWithJSON(w, http.StatusCreated, userResponse)
 }
