@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Konscription/chirpy/internal/auth"
+	"github.com/Konscription/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
@@ -16,8 +18,9 @@ type User struct {
 }
 
 func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	type email struct {
-		Email string `json:"email"`
+	type parameters struct {
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	if r.Method != http.MethodPost {
@@ -28,7 +31,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	decoder := json.NewDecoder(r.Body)
-	params := email{}
+	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
 		errorM := ErrorResponse{
@@ -37,8 +40,22 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		respondWithJSON(w, http.StatusInternalServerError, errorM)
 		return
 	}
+	//hash the password
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		errorM := ErrorResponse{
+			Error: "issue with password hashing",
+		}
+		respondWithJSON(w, http.StatusInternalServerError, errorM)
+		return
+	}
+
 	//Create the user in your database
-	user, err := cfg.db.CreateUser(r.Context(), params.Email)
+	dbParams := database.CreateUserParams{
+		Email:          params.Email,
+		HashedPassword: hashedPassword,
+	}
+	user, err := cfg.db.CreateUser(r.Context(), dbParams)
 	if err != nil {
 		errorM := ErrorResponse{
 			Error: "Something went wrong",
