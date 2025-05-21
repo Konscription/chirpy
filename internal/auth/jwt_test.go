@@ -121,3 +121,37 @@ func TestValidateJWT_EmptySecret(t *testing.T) {
 		t.Errorf("ValidateJWT() expected error 'token secret cannot be empty', got %v", err)
 	}
 }
+
+// test that two userIds do not produce the same token
+func TestMakeJWT_DifferentUserIDs(t *testing.T) {
+	userID1 := uuid.New()
+	userID2 := uuid.New()
+	tokenSecret := "supersecretkey"
+	expiresIn := time.Minute * 5
+	tokenString1, err := MakeJWT(userID1, tokenSecret, expiresIn)
+	if err != nil {
+		t.Fatalf("MakeJWT() error = %v, wantErr %v", err, false)
+	}
+	tokenString2, err := MakeJWT(userID2, tokenSecret, expiresIn)
+	if err != nil {
+		t.Fatalf("MakeJWT() error = %v, wantErr %v", err, false)
+	}
+	if tokenString1 == tokenString2 {
+		t.Errorf("MakeJWT() returned same token string for different user IDs")
+	}
+	// Validate that the tokens are valid for their respective user IDs
+	parsedUserID1, err := ValidateJWT(tokenString1, tokenSecret)
+	if err != nil {
+		t.Fatalf("ValidateJWT() error = %v, wantErr %v", err, false)
+	}
+	if parsedUserID1 != userID1 {
+		t.Errorf("ValidateJWT() = %v, want %v", parsedUserID1, userID1)
+	}
+	parsedUserID2, err := ValidateJWT(tokenString2, tokenSecret)
+	if err != nil {
+		t.Fatalf("ValidateJWT() error = %v, wantErr %v", err, false)
+	}
+	if parsedUserID2 != userID2 {
+		t.Errorf("ValidateJWT() = %v, want %v", parsedUserID2, userID2)
+	}
+}

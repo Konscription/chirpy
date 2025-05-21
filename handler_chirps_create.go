@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Konscription/chirpy/internal/auth"
 	"github.com/Konscription/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -27,8 +28,8 @@ type ErrorResponse struct {
 
 func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body   string    `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
+		//UserID uuid.UUID `json:"user_id"`
 	}
 
 	// Check if the request method is POST
@@ -37,9 +38,23 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// get jwt token from the request header
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+		return
+	}
+	// check if the token is valid and get the userID
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+		return
+	}
+
+	// Decode the request body
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding JSON: %v", err)
 		respondWithError(w, http.StatusInternalServerError, "Something went wrong", err)
@@ -66,8 +81,9 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	// create a database chirp object
 	validChirp := database.CreateChirpParams{
 		Body:   CleanedBody,
-		UserID: params.UserID,
+		UserID: userID,
 	}
+
 	// insert the chirp into the database
 	createdChirp, err := cfg.db.CreateChirp(r.Context(), validChirp)
 	if err != nil {
@@ -80,7 +96,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		CreatedAt: createdChirp.CreatedAt,
 		UpdatedAt: createdChirp.UpdatedAt,
 		Body:      createdChirp.Body,
-		UserID:    createdChirp.UserID,
+		UserID:    userID,
 	})
 }
 
