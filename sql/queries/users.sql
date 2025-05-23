@@ -19,3 +19,23 @@ FROM
     users
 WHERE
     email = $1;
+
+-- name: UpdateUser :exec
+UPDATE users
+SET
+    updated_at = NOW(),
+    hashed_password = $2,
+    email = $3
+WHERE
+    id = $1;
+
+-- name: LookupUserById :one
+SELECT
+    id,
+    created_at,
+    updated_at,
+    email
+FROM
+    users
+WHERE
+    id = $1;

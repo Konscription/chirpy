@@ -47,6 +47,37 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	return i, err
 }
 
+const lookupUserById = `-- name: LookupUserById :one
+SELECT
+    id,
+    created_at,
+    updated_at,
+    email
+FROM
+    users
+WHERE
+    id = $1
+`
+
+type LookupUserByIdRow struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Email     string
+}
+
+func (q *Queries) LookupUserById(ctx context.Context, id uuid.UUID) (LookupUserByIdRow, error) {
+	row := q.db.QueryRowContext(ctx, lookupUserById, id)
+	var i LookupUserByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Email,
+	)
+	return i, err
+}
+
 const lookupUserbyEmail = `-- name: LookupUserbyEmail :one
 SELECT
     id,
@@ -71,4 +102,25 @@ func (q *Queries) LookupUserbyEmail(ctx context.Context, email string) (User, er
 		&i.HashedPassword,
 	)
 	return i, err
+}
+
+const updateUser = `-- name: UpdateUser :exec
+UPDATE users
+SET
+    updated_at = NOW(),
+    hashed_password = $2,
+    email = $3
+WHERE
+    id = $1
+`
+
+type UpdateUserParams struct {
+	ID             uuid.UUID
+	HashedPassword string
+	Email          string
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.HashedPassword, arg.Email)
+	return err
 }
