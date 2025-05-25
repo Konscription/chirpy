@@ -11,10 +11,11 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
+	ID          uuid.UUID `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Email       string    `json:"email"`
+	IsChirpyRed bool      `json:"is_chirpy_red"`
 }
 
 func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,29 +25,20 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if r.Method != http.MethodPost {
-		errorM := ErrorResponse{
-			Error: "Method not allowed",
-		}
-		respondWithJSON(w, 405, errorM)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed", nil)
 		return
 	}
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		errorM := ErrorResponse{
-			Error: "Something went wrong",
-		}
-		respondWithJSON(w, http.StatusInternalServerError, errorM)
+		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 	//hash the password
 	hashedPassword, err := auth.HashPassword(params.Password)
 	if err != nil {
-		errorM := ErrorResponse{
-			Error: "issue with password hashing",
-		}
-		respondWithJSON(w, http.StatusInternalServerError, errorM)
+		respondWithError(w, http.StatusInternalServerError, "issue with password hashing", err)
 		return
 	}
 
@@ -57,18 +49,16 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	user, err := cfg.db.CreateUser(r.Context(), dbParams)
 	if err != nil {
-		errorM := ErrorResponse{
-			Error: "Something went wrong",
-		}
-		respondWithJSON(w, http.StatusInternalServerError, errorM)
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong", err)
 		return
 	}
 	//Map the returned database user to your own User struct
 	userResponse := User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 	//Write the response back as JSON
 	respondWithJSON(w, http.StatusCreated, userResponse)

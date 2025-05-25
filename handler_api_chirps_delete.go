@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 
-	"github.com/Konscription/chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -14,17 +13,9 @@ func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// check header for access token
-	accesstoken, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
-		return
-	}
-
-	// Validate the token
-	userID, err := auth.ValidateJWT(accesstoken, cfg.jwtSecret)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+	// check if valid auth token
+	userID, shouldReturn := hasValidAuthToken(r, w, cfg)
+	if shouldReturn {
 		return
 	}
 

@@ -6,7 +6,7 @@ VALUES (
     $1,
     $2
 )
-RETURNING id, created_at, updated_at, email;
+RETURNING id, created_at, updated_at, email, is_chirpy_red;
 
 -- name: LookupUserbyEmail :one
 SELECT
@@ -14,7 +14,8 @@ SELECT
     created_at,
     updated_at,
     email,
-    hashed_password
+    hashed_password,
+    is_chirpy_red
 FROM
     users
 WHERE
@@ -34,7 +35,8 @@ SELECT
     id,
     created_at,
     updated_at,
-    email
+    email,
+    is_chirpy_red
 FROM
     users
 WHERE

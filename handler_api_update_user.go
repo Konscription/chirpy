@@ -18,17 +18,10 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 		Password string `json:"password"`
 		Email    string `json:"email"`
 	}
-	// check header for access token
-	accesstoken, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
-		return
-	}
 
-	// Validate the token
-	userID, err := auth.ValidateJWT(accesstoken, cfg.jwtSecret)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+	// check header for access token
+	userID, shouldReturn := hasValidAuthToken(r, w, cfg)
+	if shouldReturn {
 		return
 	}
 
@@ -61,10 +54,11 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	returnedUser := User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 
 	respondWithJSON(w, http.StatusOK, returnedUser)
