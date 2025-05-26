@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Konscription/chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -20,10 +21,23 @@ func (cfg *apiConfig) polkaWebhookHandler(w http.ResponseWriter, r *http.Request
 		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed", nil)
 		return
 	}
+
+	// Check if the request has the correct API key
+	requestAPIKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+	// Validate the API key
+	if requestAPIKey != cfg.polkaKey {
+		respondWithError(w, http.StatusUnauthorized, "Invalid API key", nil)
+		return
+	}
+
 	// Decode the JSON request body
 	decoder := json.NewDecoder(r.Body)
 	req := request{}
-	err := decoder.Decode(&req)
+	err = decoder.Decode(&req)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
