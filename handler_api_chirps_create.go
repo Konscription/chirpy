@@ -54,11 +54,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 
 	// Validate the chirp
 	if len(params.Body) > 140 {
-		errorM := ErrorResponse{
-			Error: "Chirp is too long",
-		}
-		log.Printf("Chirp is too long")
-		respondWithJSON(w, http.StatusBadRequest, errorM)
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
 		return
 	}
 
