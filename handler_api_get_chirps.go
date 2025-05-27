@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/Konscription/chirpy/internal/database"
 	"github.com/google/uuid"
@@ -13,12 +14,21 @@ func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed", nil)
 		return
 	}
-
+	// get author parameter if it exists
 	authorID := r.URL.Query().Get("author_id")
 	var (
 		dbChirps []database.Chirp
 		err      error
 	)
+
+	// get sort parameter if it exists
+	sortParam := r.URL.Query().Get("sort")
+	if sortParam != "" && sortParam != "asc" && sortParam != "desc" {
+		respondWithError(w, http.StatusBadRequest, "Invalid sort format. valid values are (asc,desc)", nil)
+		return
+	} else if sortParam == "" {
+		sortParam = "asc"
+	}
 
 	if authorID != "" {
 		authorUUID, err := uuid.Parse(authorID)
@@ -49,6 +59,12 @@ func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
 			UserID:    dbChirp.UserID,
 		}
 	}
-
+	// sort the slice if desc, as default return from database is asc
+	if sortParam == "desc" {
+		// Sort chirps in descending order based on the CreatedAt timestamp
+		sort.Slice(chirpsResponse, func(i, j int) bool {
+			return chirpsResponse[i].CreatedAt.After(chirpsResponse[j].CreatedAt)
+		})
+	}
 	respondWithJSON(w, http.StatusOK, chirpsResponse)
 }
