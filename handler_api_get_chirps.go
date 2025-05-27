@@ -26,8 +26,6 @@ func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
 	if sortParam != "" && sortParam != "asc" && sortParam != "desc" {
 		respondWithError(w, http.StatusBadRequest, "Invalid sort format. valid values are (asc,desc)", nil)
 		return
-	} else if sortParam == "" {
-		sortParam = "asc"
 	}
 
 	if authorID != "" {
